@@ -196,6 +196,18 @@ RSpec.describe PumaCloudwatch::Metrics::Looper do
 
               expect(looper).to have_received(:puts).with('PumaCloudwatch Error: parse error (StandardError)')
             end
+
+            context 'when the error is an ENOENT' do
+              before do
+                allow(parser).to receive(:call).and_raise(Errno::ENOENT.new('no such file or directory'))
+              end
+
+              it 'does not log the error' do
+                looper.run
+
+                expect(looper).not_to have_received(:puts)
+              end
+            end
           end
         end
 

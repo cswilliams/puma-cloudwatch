@@ -47,7 +47,9 @@ module PumaCloudwatch
           sleep collect_frequency
           storage.aggregate(parser.call)
         rescue StandardError => e
-          puts "PumaCloudwatch Error: #{e.message} (#{e.class})"
+          # Ignore ENOENT errors, they can be raised when the Puma control app is not yet activated
+          # on startup
+          puts "PumaCloudwatch Error: #{e.message} (#{e.class})" unless e.is_a?(Errno::ENOENT)
         end
       end
 
