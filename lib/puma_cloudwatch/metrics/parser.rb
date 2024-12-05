@@ -1,44 +1,81 @@
-class PumaCloudwatch::Metrics
-  class Parser
-    METRICS = [:backlog, :running, :pool_capacity, :max_threads]
+# frozen_string_literal: true
 
-    def initialize(data)
-      @data = data
-    end
-
-    def call
-      Array.new.tap { |result| parse(@data, result) }
-    end
-
-  private
-    # Build this structure:
+module PumaCloudwatch
+  class Metrics
+    # Parses Puma stats into a format suitable for CloudWatch metrics
     #
-    #     [{:backlog=>[0, 0],
-    #     :running=>[0, 0],
-    #     :pool_capacity=>[16, 16],
-    #     :max_threads=>[16, 16]}]
+    # @example Output format
+    #   [{
+    #     backlog: [0, 0],         # Number of connections in backlog per worker
+    #     pool_capacity: [16, 16], # Thread pool capacity per worker
+    #     requests_count: [350, 475]    # Number of requests processed per worker
+    #   }]
     #
-    def parse(stats, result)
-      item = Hash.new([])
+    # All metrics are documented here: https://github.com/yob/puma-plugin-statsd/issues/27
+    class Parser
+      METRICS = %i[backlog pool_capacity requests_count].freeze
 
-      clustered = stats.key?("worker_status")
-      if clustered
-        statuses = stats["worker_status"].map { |s| s["last_status"] } # last_status: Array with worker stats
-        statuses.each do |status|
-          METRICS.each do |metric|
-            count = status[metric.to_s]
-            item[metric] += [count] if count
-          end
+      class InvalidStatsError < StandardError; end
+
+      attr_reader :fetcher
+
+      def initialize(fetcher)
+        @fetcher = fetcher
+      end
+
+      def call
+        stats = fetcher.call
+        raise InvalidStatsError, 'Stats cannot be nil' if stats.nil?
+
+        extract_metrics(stats)
+      end
+
+      private
+
+      def extract_metrics(stats)
+        metrics = initialize_metrics_hash
+
+        if clustered_mode?(stats)
+          parse_clustered_metrics(metrics, stats)
+        else
+          parse_single_mode_metrics(metrics, stats)
         end
-      else # single mode
-        METRICS.each do |metric|
-          count = stats[metric.to_s]
-          item[metric] += [count] if count
+
+        metrics.empty? ? nil : metrics
+      end
+
+      def initialize_metrics_hash
+        METRICS.each_with_object({}) do |metric, hash|
+          hash[metric] = []
         end
       end
 
-      result << item unless item.empty?
-      result
+      def clustered_mode?(stats)
+        stats.key?('worker_status')
+      end
+
+      def parse_clustered_metrics(metrics, stats)
+        worker_statuses(stats).each do |status|
+          collect_metrics(metrics, status)
+        end
+      end
+
+      def parse_single_mode_metrics(metrics, stats)
+        collect_metrics(metrics, stats)
+      end
+
+      def worker_statuses(stats)
+        stats['worker_status']
+          .map { |status| status['last_status'] }
+          .compact
+      end
+
+      def collect_metrics(metrics, status)
+        METRICS.each do |metric|
+          value = status[metric.to_s]
+          metrics[metric] << value if value
+        end
+      end
     end
   end
 end

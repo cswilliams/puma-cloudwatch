@@ -1,57 +1,70 @@
-class PumaCloudwatch::Metrics
-  class Looper
-    def self.run(options)
-      new(options).run
-    end
+# frozen_string_literal: true
 
-    def initialize(options)
-      @options = options
-      @control_url = options[:control_url]
-      @control_auth_token = options[:control_auth_token]
-      @frequency = Integer(ENV['PUMA_CLOUDWATCH_FREQUENCY'] || 60)
-      @enabled = ENV['PUMA_CLOUDWATCH_ENABLED'] || false
-      @fetched = false
-    end
+require 'concurrent'
 
-    def run
-      raise StandardError, "Puma control app is not activated" if @control_url == nil
-      puts(message) unless ENV['PUMA_CLOUDWATCH_MUTE_START_MESSAGE']
-      Thread.new do
-        perform
+module PumaCloudwatch
+  class Metrics
+    # This class is responsible for running the metrics collection and sending
+    # the aggregated metrics to CloudWatch
+    class Looper
+      DEFAULT_COLLECT_FREQUENCY = 5
+      DEFAULT_SEND_FREQUENCY = 60
+
+      attr_reader :control_url, :control_auth_token, :collect_frequency, :send_frequency, :storage,
+                  :enabled, :parser, :sender
+
+      class ControlAppError < StandardError; end
+
+      def initialize(options)
+        @control_url = options[:control_url]
+        @control_auth_token = options[:control_auth_token]
+        @collect_frequency = Integer(ENV['PUMA_CLOUDWATCH_COLLECT_FREQUENCY'] || DEFAULT_COLLECT_FREQUENCY)
+        @send_frequency = Integer(ENV['PUMA_CLOUDWATCH_SEND_FREQUENCY'] || DEFAULT_SEND_FREQUENCY)
+        @enabled = ENV['PUMA_CLOUDWATCH_ENABLED'] || false
+        @storage = Storage.new(send_frequency)
+        @parser = Parser.new(Fetcher.new(options))
+        @sender = Sender.new(send_frequency)
       end
-    end
 
-    def message
-      message = "puma-cloudwatch plugin: Will send data every #{@frequency} seconds."
-      unless @enabled
-        to_enable = "To enable set the environment variable PUMA_CLOUDWATCH_ENABLED=1"
-        message = "Disabled: #{message}\n#{to_enable}"
+      def run
+        return unless enabled?
+        raise ControlAppError, 'Puma control app is not activated' if control_url.nil?
+
+        @collect_thread = Thread.new { collect_metrics }
+        @send_thread = Thread.new { send_metrics }
       end
-      message
-    end
 
-  private
-    def perform
-      loop do
-        begin
-          stats = Fetcher.new(@options).call
-          @fetched = true
-          results = Parser.new(stats).call
-          Sender.new(results).call unless results.empty?
-          sleep @frequency
-        rescue Exception => e
-          if @fetched
-            puts "Error reached top of looper: #{e.message} (#{e.class})"
-          else
-            # sleep and don't error until we've successfully fetched
-            sleep @frequency
-          end
+      # Used for testing only
+      def stop
+        @collect_thread&.kill
+        @send_thread&.kill
+      end
+
+      private
+
+      def collect_metrics
+        loop do
+          sleep collect_frequency
+          storage.aggregate(parser.call)
+        rescue StandardError => e
+          puts "PumaCloudwatch Error: #{e.message} (#{e.class})"
         end
       end
-    end
 
-    def enabled?
-      !!@enabled
+      def send_metrics
+        loop do
+          sleep send_frequency
+          cutoff_time = Time.now.to_f - send_frequency
+          metrics_to_send = storage.extract_metrics(cutoff_time)
+          sender.call(metrics_to_send) unless metrics_to_send.empty?
+        rescue StandardError => e
+          puts "PumaCloudwatch Error: #{e.message} (#{e.class})"
+        end
+      end
+
+      def enabled?
+        !!enabled
+      end
     end
   end
 end

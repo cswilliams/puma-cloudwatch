@@ -1,4 +1,6 @@
-require 'puma-cloudwatch'
+# frozen_string_literal: true
+
+require 'puma_cloudwatch'
 
 Puma::Plugin.create do
   def start(launcher)

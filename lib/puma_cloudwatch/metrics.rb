@@ -1,20 +1,21 @@
+# frozen_string_literal: true
+
+require 'puma_cloudwatch/metrics/fetcher'
+require 'puma_cloudwatch/metrics/looper'
+require 'puma_cloudwatch/metrics/parser'
+require 'puma_cloudwatch/metrics/sender'
+require 'puma_cloudwatch/metrics/storage'
+
 module PumaCloudwatch
+  # Metrics module
   class Metrics
-    autoload :Fetcher, "puma_cloudwatch/metrics/fetcher"
-    autoload :Looper, "puma_cloudwatch/metrics/looper"
-    autoload :Parser, "puma_cloudwatch/metrics/parser"
-    autoload :Sender, "puma_cloudwatch/metrics/sender"
-
     def self.start_sending(launcher)
-      new(launcher).start_sending
+      @looper = Looper.new(launcher.options)
+      @looper.run
     end
 
-    def initialize(launcher)
-      @launcher = launcher
-    end
-
-    def start_sending
-      Looper.run(@launcher.options)
+    def self.stop_sending
+      @looper.stop
     end
   end
 end
