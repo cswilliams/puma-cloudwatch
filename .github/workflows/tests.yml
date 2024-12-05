@@ -1,0 +1,48 @@
+name: Run RSpec, Rubocop and Coverage
+
+on:
+  pull_request:
+
+jobs:
+  rubocop:
+    name: Rubocop
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+      
+      - name: Run Rubocop
+        run: bundle exec rubocop --format github
+
+  rspec:
+    name: RSpec
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+
+      - name: Run RSpec
+        run: bundle exec rspec --order random --format RSpec::Github::Formatter --format progress
+
+      - name: Trigger simplecov check
+        uses: joshmfrankel/simplecov-check-action@be89e11889202cc59efb14aab2a7091622fa9aad
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          minimum_suite_coverage: 100
+          minimum_file_coverage: 100
+
+
+
+        

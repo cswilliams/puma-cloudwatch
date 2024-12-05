@@ -1,17 +1,28 @@
-require "bundler/setup"
-require "puma_cloudwatch"
+# frozen_string_literal: true
 
-# Ensures aws api never called. Fixture home folder does not contain ~/.aws/credentails
-ENV['HOME'] = File.join(Dir.pwd,'spec/fixtures/home')
+require 'simplecov'
+require 'simplecov-json'
+
+SimpleCov.start do
+  coverage_dir './coverage'
+  add_filter '/spec/' # Excludes all files in the spec directory
+end
+
+SimpleCov.formatters = SimpleCov::Formatter::MultiFormatter.new(
+  [SimpleCov::Formatter::HTMLFormatter, SimpleCov::Formatter::JSONFormatter]
+)
+
+require 'rspec'
+require 'rspec/mocks'
+require 'timecop'
+require 'puma'
+require 'puma/plugin'
+require_relative '../lib/puma_cloudwatch'
+require_relative '../lib/puma/plugin/cloudwatch'
 
 RSpec.configure do |config|
-  # Enable flags like --only-failures and --next-failure
-  config.example_status_persistence_file_path = ".rspec_status"
-
-  # Disable RSpec exposing methods globally on `Module` and `main`
-  config.disable_monkey_patching!
-
-  config.expect_with :rspec do |c|
-    c.syntax = :expect
+  config.before do
+    full_env = defined?(env) ? env : {}
+    stub_const('ENV', full_env)
   end
 end
