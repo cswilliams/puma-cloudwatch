@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.files         = Dir['lib/**/*']
   spec.require_paths = ['lib']
 
-  spec.required_ruby_version = '>= 3.3'
+  spec.required_ruby_version = '>= 3.1.0'
   spec.add_dependency 'aws-sdk-cloudwatch', '~> 1'
   spec.add_dependency 'base64'
   spec.add_dependency 'concurrent-ruby', '~> 1'
