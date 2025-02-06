@@ -28,7 +28,7 @@ RSpec.describe PumaCloudwatch::Metrics::Storage do
     let(:base_metrics) do
       {
         backlog: [0, 1],
-        pool_capacity: [16, 32],
+        busy_threads: [16, 32],
         requests_count: [7, 8]
       }
     end
@@ -61,7 +61,7 @@ RSpec.describe PumaCloudwatch::Metrics::Storage do
       let(:additional_metrics) do
         {
           backlog: [2],
-          pool_capacity: [64],
+          busy_threads: [64],
           requests_count: [15]
         }
       end

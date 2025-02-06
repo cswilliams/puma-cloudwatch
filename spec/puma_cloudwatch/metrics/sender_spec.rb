@@ -10,7 +10,7 @@ RSpec.describe PumaCloudwatch::Metrics::Sender do
     {
       timestamp => {
         backlog: { min: 0, max: 0, sum: 0, samples: 12 },
-        pool_capacity: { min: 0, max: 3, sum: 18, samples: 12 },
+        busy_threads: { min: 0, max: 3, sum: 18, samples: 12 },
         requests_count: { min: 3, max: 3, sum: 36, samples: 12 }
       }
     }

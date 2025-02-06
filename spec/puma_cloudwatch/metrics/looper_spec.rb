@@ -114,14 +114,14 @@ RSpec.describe PumaCloudwatch::Metrics::Looper do
 
   describe '#run' do
     let(:fetched_metrics) do
-      { 'backlog' => 0, 'running' => 1, 'pool_capacity' => 1, 'max_threads' => 1, 'requests_count' => 0 }
+      { 'backlog' => 0, 'running' => 1, 'busy_threads' => 1, 'max_threads' => 1, 'requests_count' => 0 }
     end
     let(:parsed_metrics) do
-      { backlog: [0], pool_capacity: [1], requests_count: [0] }
+      { backlog: [0], busy_threads: [1], requests_count: [0] }
     end
     let(:extracted_metrics) do
       { Time.now.to_i => { backlog: { min: 0, max: 0, sum: 0.0, samples: 2 },
-                           pool_capacity: { min: 1, max: 1, sum: 2.0, samples: 2 },
+                           busy_threads: { min: 1, max: 1, sum: 2.0, samples: 2 },
                            requests_count: { min: 0, max: 0, sum: 0.0, samples: 2 } } }
     end
 

@@ -25,7 +25,7 @@ RSpec.describe PumaCloudwatch::Metrics::Parser do
           'started_at' => '2019-09-16T19:20:12Z',
           'backlog' => 0,
           'running' => 16,
-          'pool_capacity' => 8,
+          'busy_threads' => 8,
           'requests_count' => 5
         }
       end
@@ -33,7 +33,7 @@ RSpec.describe PumaCloudwatch::Metrics::Parser do
       it 'returns an array with one metrics hash' do
         expect(parse).to eq({
                               backlog: [data['backlog']],
-                              pool_capacity: [data['pool_capacity']],
+                              busy_threads: [data['busy_threads']],
                               requests_count: [data['requests_count']]
                             })
       end
@@ -62,7 +62,7 @@ RSpec.describe PumaCloudwatch::Metrics::Parser do
               'last_status' => {
                 'backlog' => 0,
                 'running' => 1,
-                'pool_capacity' => 16,
+                'busy_threads' => 16,
                 'requests_count' => 5
               }
             },
@@ -76,7 +76,7 @@ RSpec.describe PumaCloudwatch::Metrics::Parser do
               'last_status' => {
                 'backlog' => 0,
                 'running' => 16,
-                'pool_capacity' => 8,
+                'busy_threads' => 8,
                 'requests_count' => 6
               }
             }
@@ -94,7 +94,7 @@ RSpec.describe PumaCloudwatch::Metrics::Parser do
         it 'returns empty arrays for all metrics' do
           expect(parse).to eq({
                                 backlog: [],
-                                pool_capacity: [],
+                                busy_threads: [],
                                 requests_count: []
                               })
         end
@@ -106,7 +106,7 @@ RSpec.describe PumaCloudwatch::Metrics::Parser do
         it 'returns an array with metrics for each worker' do
           expect(parse).to eq({
                                 backlog: worker_metrics.map { |metrics| metrics['backlog'] },
-                                pool_capacity: worker_metrics.map { |metrics| metrics['pool_capacity'] },
+                                busy_threads: worker_metrics.map { |metrics| metrics['busy_threads'] },
                                 requests_count: worker_metrics.map { |metrics| metrics['requests_count'] }
                               })
         end
@@ -116,7 +116,7 @@ RSpec.describe PumaCloudwatch::Metrics::Parser do
         let(:data) do
           base_cluster_data.tap do |d|
             first_worker = d['worker_status'][0]['last_status']
-            first_worker.delete('pool_capacity')
+            first_worker.delete('busy_threads')
             first_worker.delete('requests_count')
           end
         end
@@ -124,7 +124,7 @@ RSpec.describe PumaCloudwatch::Metrics::Parser do
         it 'only includes available metrics in the result' do
           expect(parse).to eq({
                                 backlog: worker_metrics.map { |metrics| metrics['backlog'] },
-                                pool_capacity: worker_metrics.map { |metrics| metrics['pool_capacity'] }.compact,
+                                busy_threads: worker_metrics.map { |metrics| metrics['busy_threads'] }.compact,
                                 requests_count: worker_metrics.map { |metrics| metrics['requests_count'] }.compact
                               })
         end
