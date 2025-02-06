@@ -6,7 +6,7 @@ This is a fork of the [puma-cloudwatch](https://github.com/boltops-tools/puma-cl
 
 1. Split the collection and sending of metrics into two separate threads. This allows you to collect metrics more frequently than you send them to CloudWatch. This is configured via two new environment variables: `PUMA_CLOUDWATCH_COLLECT_FREQUENCY` and `PUMA_CLOUDWATCH_SEND_FREQUENCY`. This allows you to collect metrics more frequently than you send them to CloudWatch. For example, you can collect metrics every 1-5s and send them to CloudWatch every 60s.
 
-2. Changed the reported metrics to: `pool_capacity`, `backlog`, and `requests_count`. 
+2. Changed the reported metrics to: `busy_threads`, `backlog`, and `requests_count`. 
 
 3. I've removed some features that I didn't need like the debug mode, custom dimensions, and custom AWS creds to make the code simpler. I also changed the default namespace to `Puma` instead of `Webserver`.
 
@@ -18,7 +18,7 @@ This is a fork of the [puma-cloudwatch](https://github.com/boltops-tools/puma-cl
 
 List of metrics reported to cloudwatch:
 
-* pool_capacity: the number of idle and unused worker threads. When this is low/zero, puma is running at full capacity and might need scaling up
+* busy_threads: running - how many threads are waiting to receive work + how many requests are waiting for a thread to pick them up
 * backlog: the number of requests that have made it to a worker but are yet to be processed. This will normally be zero, as requests queue on the tcp/unix socket in front of the master puma process, not in the worker thread pool
 * requests_count: incrementing count of handled requests
 

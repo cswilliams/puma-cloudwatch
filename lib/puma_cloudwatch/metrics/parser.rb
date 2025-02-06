@@ -7,13 +7,13 @@ module PumaCloudwatch
     # @example Output format
     #   [{
     #     backlog: [0, 0],         # Number of connections in backlog per worker
-    #     pool_capacity: [16, 16], # Thread pool capacity per worker
+    #     busy_threads: [16, 16], # running - threads waiting to receive work + requests waiting for a thread
     #     requests_count: [350, 475]    # Number of requests processed per worker
     #   }]
     #
     # All metrics are documented here: https://github.com/yob/puma-plugin-statsd/issues/27
     class Parser
-      METRICS = %i[backlog pool_capacity requests_count].freeze
+      METRICS = %i[backlog busy_threads requests_count].freeze
 
       class InvalidStatsError < StandardError; end
 
