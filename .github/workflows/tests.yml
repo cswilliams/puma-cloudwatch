@@ -2,6 +2,7 @@ name: Run RSpec, Rubocop and Coverage
 
 on:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   rubocop:
